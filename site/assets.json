@@ -1,0 +1,8 @@
+{
+  "version": "0.1.0",
+  "files": {
+    "windows": { "label": "Windows 10/11", "description": "0.1.0 便携版，下载后直接运行，已包含本地运行依赖。", "url": "https://github.com/yangmagic14-hub/jihe-research-downloads/releases/latest/download/jihe-research-desktop-win-x64.exe" },
+    "macArm": { "label": "macOS Apple Silicon", "description": "适用于 M 系列芯片的版本。", "url": "" },
+    "macIntel": { "label": "macOS Intel", "description": "适用于 Intel 芯片的版本。", "url": "" }
+  }
+}
