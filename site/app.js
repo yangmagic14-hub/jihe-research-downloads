@@ -2,11 +2,11 @@ const list = document.querySelector('#download-list');
 const versionLabel = document.querySelector('#version');
 
 const fallback = {
-  version: '0.1.0',
+  version: '0.1.1',
   files: {
-    windows: { label: 'Windows 10/11', description: '便携版，下载后直接打开，无需安装 Node.js。', url: 'https://github.com/yangmagic14-hub/jihe-research-downloads/releases/latest/download/jihe-research-desktop-win-x64.exe' },
-    macArm: { label: 'macOS Apple Silicon', description: '适用于 M 系列芯片的 DMG 安装包。', url: '' },
-    macIntel: { label: 'macOS Intel', description: '适用于 Intel 芯片的 DMG 安装包。', url: '' }
+    windows: { label: 'Windows 10/11 x64', description: '便携版，下载后直接打开，无需安装 Node.js。', url: 'https://github.com/yangmagic14-hub/jihe-research-downloads/releases/latest/download/jihe-research-desktop-win-x64.exe' },
+    macArm: { label: 'macOS Apple Silicon', description: 'M 系列芯片 DMG 安装包。', url: 'https://github.com/yangmagic14-hub/jihe-research-downloads/releases/latest/download/jihe-research-desktop-arm64.dmg' },
+    macIntel: { label: 'macOS Intel', description: 'Intel 芯片 DMG 安装包。', url: 'https://github.com/yangmagic14-hub/jihe-research-downloads/releases/latest/download/jihe-research-desktop-x64.dmg' }
   }
 };
 
