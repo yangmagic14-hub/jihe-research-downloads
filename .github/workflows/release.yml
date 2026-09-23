@@ -1,0 +1,69 @@
+name: Build and publish desktop releases
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            artifact: windows-x64
+          - os: macos-15
+            platform: macos
+            arch: arm64
+            artifact: macos-arm64
+          - os: macos-15-intel
+            platform: macos
+            arch: x64
+            artifact: macos-x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: jihe-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: jihe-desktop/package-lock.json
+      - run: npm ci
+      - name: Build Windows portable app
+        if: matrix.platform == 'windows'
+        run: npm run pack:win
+      - name: Build macOS app packages
+        if: matrix.platform == 'macos'
+        run: npx electron-builder --mac dmg zip --${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: jihe-desktop/release/*
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          body: |
+            Windows x64 portable build and macOS Apple Silicon / Intel packages.
+
+            macOS packages are unsigned and not notarized. On first launch, macOS may require approval under Privacy & Security.

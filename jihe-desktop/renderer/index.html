@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>籍合研究检索台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><div><p class="eyebrow">RESEARCH SEARCH DESKTOP</p><h1>籍合研究检索台</h1><p>面向馆藏研究的可恢复检索、去重与导出工具。</p></div><button id="open-source" class="secondary">打开籍合网并登录</button></header>
+  <main>
+    <section class="panel setup"><h2>1. 建立检索任务</h2><label>数据源<select id="profile"><option value="jihe">籍合网（通用网页检索）</option><option value="fjlibJihe">福建省图书馆馆外访问 → 中华经典古籍库</option></select></label><label>检索词（逗号或换行分隔）<textarea id="terms">会通河
+南旺
+戴村坝
+分水
+河工
+闸</textarea></label><div class="row"><label><input id="variants" type="checkbox" checked> 自动扩展繁简与关联词</label><label>每词等待 <input id="delay" type="number" min="3000" value="5000"> ms</label><label>每词最多采集 <input id="max" type="number" min="1" max="100" value="20"> 条</label></div><p class="hint">首次使用：先打开籍合网，在独立窗口完成正常登录与验证码；回到这里再开始。程序只读取页面已经显示的结果，不保存账号、密码或 Cookie。</p><div class="actions"><button id="create">创建任务</button><button id="run" class="secondary">开始／继续</button><button id="pause" class="secondary">暂停并保存</button></div></section>
+    <section class="panel status"><h2>2. 运行状态</h2><div class="metrics"><article><span>状态</span><b id="status">未创建</b></article><article><span>进度</span><b id="progress">0 / 0</b></article><article><span>去重后结果</span><b id="records">0</b></article></div><div class="bar"><i id="bar"></i></div><p id="error" class="error"></p><pre id="log">等待任务创建。</pre></section>
+    <section class="panel results"><h2>3. 已采集的可见结果</h2><div class="actions"><button data-export="csv" class="secondary">导出 CSV</button><button data-export="json" class="secondary">导出 JSON</button><button data-export="txt" class="secondary">导出 TXT</button></div><div id="result-list"><p class="empty">尚无结果。</p></div></section>
+  </main>
+  <footer>合规边界：遵守籍合网与所属机构的服务条款、访问频率和版权规则；不用于绕过登录、验证码、付费、下载或复制限制。</footer>
+  <script src="renderer.js"></script>
+</body>
+</html>

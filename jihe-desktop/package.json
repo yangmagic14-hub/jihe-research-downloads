@@ -1,0 +1,51 @@
+{
+  "name": "jihe-research-desktop",
+  "version": "0.1.1",
+  "private": true,
+  "description": "籍合网研究检索与引文整理桌面端",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "pack:win": "electron-builder --win portable",
+    "pack:mac": "electron-builder --mac dmg zip",
+    "pack:mac:dir": "electron-builder --mac dir"
+  },
+  "devDependencies": {
+    "electron": "^39.8.9",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "cn.research.jihe.desktop",
+    "productName": "籍合研究检索台",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "profiles.cjs",
+      "core/**/*",
+      "renderer/**/*",
+      "package.json",
+      "!release{,/**/*}",
+      "!release-*{,/**/*}",
+      "!node_modules{,/**/*}"
+    ],
+    "win": {
+      "target": ["portable"],
+      "signExecutable": false,
+      "artifactName": "jihe-research-desktop-win-${arch}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "identity": null,
+      "hardenedRuntime": false,
+      "category": "public.app-category.productivity",
+      "artifactName": "jihe-research-desktop-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "籍合研究检索台 ${version}"
+    }
+  }
+}
