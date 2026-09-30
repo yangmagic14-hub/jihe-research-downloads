@@ -1,6 +1,6 @@
 {
   "name": "jihe-research-desktop",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "籍合网研究检索与引文整理桌面端",
   "main": "main.cjs",
@@ -41,6 +41,9 @@
       "target": ["dmg", "zip"],
       "identity": null,
       "hardenedRuntime": false,
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "籍合研究检索台仅在你创建检索任务时控制 Safari 当前网页，读取页面标题、网址和已显示的检索结果并填入检索词；不会读取或保存密码、Cookie。"
+      },
       "category": "public.app-category.productivity",
       "artifactName": "jihe-research-desktop-${arch}.${ext}"
     },

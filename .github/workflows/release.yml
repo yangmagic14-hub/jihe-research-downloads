@@ -37,6 +37,7 @@ jobs:
           cache: npm
           cache-dependency-path: jihe-desktop/package-lock.json
       - run: npm ci
+      - run: npm test
       - name: Build Windows portable app
         if: matrix.platform == 'windows'
         run: npm run pack:win
@@ -67,3 +68,4 @@ jobs:
             Windows x64 portable build and macOS Apple Silicon / Intel packages.
 
             macOS packages are unsigned and not notarized. On first launch, macOS may require approval under Privacy & Security.
+            On macOS, users can authenticate in Safari and let the app detect the supported database from the current tab. Safari's “Allow JavaScript from Apple Events” setting must be enabled.

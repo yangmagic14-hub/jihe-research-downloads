@@ -6,6 +6,6 @@ Public download page for the Jihe research desktop prototype.
 - Desktop app source: `jihe-desktop/`.
 - The Windows application is distributed as a GitHub Release asset.
 - The public repository contains only this app and its download page, not the separate research workspace.
-- The app does not store library credentials or cookies. Users authenticate themselves in the official website window.
+- The app does not store library credentials or cookies. Windows users authenticate in the app's official-site window; macOS users can reuse the active Safari tab and its normal login session.
 
-The Windows portable build and macOS DMG/ZIP packages are built by GitHub Actions for each release tag. Every package bundles Electron and does not require a separate Node.js installation. The macOS packages are not signed or notarized, so macOS may ask the user to approve opening the app.
+The Windows portable build and macOS DMG/ZIP packages are built by GitHub Actions for each release tag. Every package bundles Electron and does not require a separate Node.js installation. Safari automation on macOS requires the user to enable “Allow JavaScript from Apple Events”; the app only reads and operates the active tab for supported database domains. The macOS packages are not signed or notarized, so macOS may ask the user to approve opening the app.

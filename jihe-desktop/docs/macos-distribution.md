@@ -12,7 +12,9 @@ npm install
 npm start
 ```
 
-首次打开时，在独立的籍合网窗口完成正常登录。登录信息仍仅保存在该用户的浏览器会话中，应用不会写入账号、密码或 Cookie。
+macOS 默认使用 Safari 当前登录会话：先在 Safari 登录并打开所选数据库的检索页面，再启动应用检查当前页面并建立任务。任务直接在 Safari 当前标签页执行，应用不会读取或复制 Safari Cookie，也不需要在应用内再次登录。
+
+Safari 首次使用需要启用网页脚本自动化：在 Safari“设置 → 高级”中显示网页开发者功能，再到“开发”菜单/开发者设置启用“允许来自 Apple Events 的 JavaScript”。首次控制 Safari 时，macOS 还可能询问是否允许应用自动化 Safari。相关设置说明见 [Apple Safari 开发者设置](https://developer.apple.com/documentation/safari-developer-tools/developer-settings)。
 
 ## 构建 Apple Silicon / Intel 版本
 
@@ -39,7 +41,7 @@ npx electron-builder --mac dmg zip --x64
 
 ## 签名与 Gatekeeper
 
-未签名测试包首次打开可能被 Gatekeeper 拦截。测试人员可在 Finder 中按住 Control 点击应用，选择“打开”。
+未签名测试包首次打开可能被 Gatekeeper 拦截。仅当确认安装包来自可信来源且未遭篡改时，测试人员可在 Finder 中按住 Control 点击应用，选择“打开”，或按 Apple 官方指引在“系统设置 → 隐私与安全性”中点“仍要打开”。
 
 对外正式发布应在 Apple Developer 账户下配置 `Developer ID Application` 证书、App-specific password 和公证流程，再在 macOS CI 或本机执行签名/公证。证书、Apple ID、密码和应用专用密码必须使用 CI 的受保护变量或本机钥匙串，不能写进代码、配置文件或分发包。
 

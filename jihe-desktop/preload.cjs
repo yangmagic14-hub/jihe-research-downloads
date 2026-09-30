@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("jihe", {
+  platform: process.platform,
   openSource: (profileId) => ipcRenderer.invoke("source:open", profileId),
+  inspectSafari: (profileId) => ipcRenderer.invoke("safari:inspect", profileId),
   start: (options) => ipcRenderer.invoke("run:start", options),
   continue: () => ipcRenderer.invoke("run:continue"),
   pause: () => ipcRenderer.invoke("run:pause"),

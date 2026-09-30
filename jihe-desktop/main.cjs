@@ -3,6 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { buildQueue, mergeUnique, makeState } = require("./core/query.cjs");
 const profiles = require("./profiles.cjs");
+const { inspectSafariPage, evaluateSafariPage, validateSafariPage, detectProfileIdForUrl } = require("./core/safari.cjs");
 
 let controlWindow;
 let sourceWindow;
@@ -40,6 +41,18 @@ function createSourceWindow(profile) {
   return sourceWindow;
 }
 
+async function executeSourceScript(script) {
+  if (activeState?.browserMode === "safari") {
+    const profile = profiles[activeState.profileId];
+    validateSafariPage(await inspectSafariPage(), profile);
+    return evaluateSafariPage(script, profile);
+  }
+  if (!sourceWindow || sourceWindow.isDestroyed()) {
+    throw new Error("数据库浏览器窗口已关闭，请重新打开数据源页面。");
+  }
+  return sourceWindow.webContents.executeJavaScript(script, true);
+}
+
 async function saveCheckpoint() {
   if (!activeState) return;
   activeState.updatedAt = new Date().toISOString();
@@ -55,7 +68,7 @@ async function readVisibleResults(profile, query) {
       return { title: firstText(item, ${JSON.stringify(profile.resultTitle)}), snippet: firstText(item, ${JSON.stringify(profile.resultSnippet)}), url: link ? new URL(link.getAttribute('href'), location.href).href : location.href };
     }).filter(item => item.title);
   })()`;
-  const raw = await sourceWindow.webContents.executeJavaScript(script, true);
+  const raw = await executeSourceScript(script);
   return raw.map((item) => ({ ...item, query, collectedAt: new Date().toISOString() }));
 }
 
@@ -71,7 +84,7 @@ async function submitQuery(profile, query) {
     input.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', bubbles:true }));
     return { ok:true };
   })()`;
-  return sourceWindow.webContents.executeJavaScript(script, true);
+  return executeSourceScript(script);
 }
 
 async function runQueue() {
@@ -79,28 +92,32 @@ async function runQueue() {
   stopRequested = false;
   activeState.status = "running";
   while (!stopRequested && activeState.cursor < activeState.queue.length) {
-    if (!sourceWindow || sourceWindow.isDestroyed()) {
+    if (activeState.browserMode !== "safari" && (!sourceWindow || sourceWindow.isDestroyed())) {
       activeState.status = "paused";
+      activeState.error = "数据库浏览器窗口已关闭，请重新打开数据源页面。";
       await saveCheckpoint();
       safeSend("run:update", activeState);
       return;
     }
     const query = activeState.queue[activeState.cursor];
     safeSend("run:log", `检索：${query}`);
-    const submitted = await submitQuery(profile, query);
-    if (!submitted.ok) {
+    try {
+      const submitted = await submitQuery(profile, query);
+      if (!submitted.ok) throw new Error(submitted.reason);
+      await sleep(activeState.delayMs);
+      const records = await readVisibleResults(profile, query);
+      activeState.records = mergeUnique(activeState.records, records);
+      activeState.cursor += 1;
+      activeState.error = "";
+      await saveCheckpoint();
+      safeSend("run:update", activeState);
+    } catch (error) {
       activeState.status = "paused";
-      activeState.error = submitted.reason;
+      activeState.error = error.message || String(error);
       await saveCheckpoint();
       safeSend("run:update", activeState);
       return;
     }
-    await sleep(activeState.delayMs);
-    const records = await readVisibleResults(profile, query);
-    activeState.records = mergeUnique(activeState.records, records);
-    activeState.cursor += 1;
-    await saveCheckpoint();
-    safeSend("run:update", activeState);
   }
   activeState.status = stopRequested ? "paused" : "completed";
   await saveCheckpoint();
@@ -114,18 +131,68 @@ function toCsv(records) {
 
 app.whenReady().then(() => {
   createControlWindow();
-  ipcMain.handle("source:open", (_event, profileId = "jihe") => createSourceWindow(profiles[profileId]).webContents.getURL());
+  ipcMain.handle("source:open", (_event, profileId = "jihe") => {
+    const profile = profiles[profileId];
+    if (!profile) throw new Error("未知的数据源。");
+    return createSourceWindow(profile).webContents.getURL();
+  });
+  ipcMain.handle("safari:inspect", async (_event, profileId) => {
+    const page = await inspectSafariPage();
+    const resolvedProfileId = !profileId || profileId === "auto" ? detectProfileIdForUrl(page.url, profiles) : profileId;
+    const profile = profiles[resolvedProfileId];
+    if (!profile) throw new Error("无法识别 Safari 当前网站。请打开籍合网或福建省图书馆的中华经典古籍库页面。");
+    validateSafariPage(page, profile);
+    return { ...page, profileId: resolvedProfileId, profileName: profile.name };
+  });
   ipcMain.handle("run:start", async (_event, options) => {
+    const browserMode = options.browserMode === "safari" ? "safari" : "embedded";
+    let profileId = options.profileId;
+    let safariPage = null;
+    if (browserMode === "safari") {
+      safariPage = await inspectSafariPage();
+      if (profileId === "auto") profileId = detectProfileIdForUrl(safariPage.url, profiles);
+    } else if (profileId === "auto") {
+      profileId = "jihe";
+    }
+    const profile = profiles[profileId];
+    if (!profile) throw new Error(browserMode === "safari" ? "无法识别 Safari 当前网站。请打开籍合网或福建省图书馆的中华经典古籍库页面。" : "请选择有效的数据源。");
+    if (browserMode === "safari") {
+      validateSafariPage(safariPage, profile);
+    } else {
+      createSourceWindow(profile);
+    }
     const queue = buildQueue(options.terms, { expandVariants: options.expandVariants });
-    activeState = makeState({ queue, profileId: options.profileId, delayMs: Math.max(3000, Number(options.delayMs) || 5000), maxPerQuery: Math.max(1, Math.min(100, Number(options.maxPerQuery) || 20)) });
-    createSourceWindow(profiles[activeState.profileId]);
+    activeState = makeState({ queue, profileId, delayMs: Math.max(3000, Number(options.delayMs) || 5000), maxPerQuery: Math.max(1, Math.min(100, Number(options.maxPerQuery) || 20)) });
+    activeState.browserMode = browserMode;
     await saveCheckpoint();
     safeSend("run:update", activeState);
     return activeState;
   });
   ipcMain.handle("run:continue", async () => { if (activeState?.status !== "running") runQueue().catch((error) => safeSend("run:log", error.message)); return activeState; });
   ipcMain.handle("run:pause", async () => { stopRequested = true; return activeState; });
-  ipcMain.handle("state:load", async () => { try { return JSON.parse(await fs.readFile(checkpointPath(), "utf8")); } catch { return null; } });
+  ipcMain.handle("state:load", async () => {
+    let saved;
+    try {
+      saved = JSON.parse(await fs.readFile(checkpointPath(), "utf8"));
+    } catch {
+      activeState = null;
+      return null;
+    }
+    activeState = saved;
+    let checkpointChanged = false;
+    if (!activeState.browserMode) {
+      activeState.browserMode = process.platform === "darwin" ? "safari" : "embedded";
+      checkpointChanged = true;
+    }
+    if (activeState.status === "running") {
+      activeState.status = "paused";
+      activeState.error = "上次运行中断；确认数据源页面后可继续。";
+      checkpointChanged = true;
+    }
+    if (activeState.browserMode !== "safari" && activeState.status !== "completed") createSourceWindow(profiles[activeState.profileId]);
+    if (checkpointChanged) await saveCheckpoint();
+    return activeState;
+  });
   ipcMain.handle("export:records", async (_event, format) => {
     if (!activeState?.records) return { canceled: true };
     const extension = format === "json" ? "json" : format === "txt" ? "txt" : "csv";
